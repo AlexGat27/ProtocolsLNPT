@@ -1,44 +1,54 @@
 from .BaseProtocol import BaseProtocol
+from enum import Enum
 
-class Params:
-    def __init__(self, code: int, length: int, value: int) -> None:
-        self.code = code
+class COTPParamCode(Enum):
+    TPDU_SIZE = 0xC0
+    SRC_TSAP = 0xC1
+    DST_TSAP = 0xC2
+
+class COTPType(Enum):
+    CR = 0xE0  # Connect Request
+    CC = 0xD0  # Connect Confirm
+    DR = 0x80  # Disconnect Request
+    DC = 0xC0  # Disconnect Confirm
+    DT = 0xF0  # Data Transfer
+    AK = 0x60  # Data Acknowledge
+    RJ = 0x50  # Reject
+    ED = 0x10  # Expedited Data
+    EA = 0x20  # Expedited Data Acknowledge
+
+class COTPClass(Enum):
+    CLASS_0 = 0x00  # Simple Class
+    CLASS_1 = 0x01  # Basic Error Recovery Class
+    CLASS_2 = 0x02  # Multiplexing Class
+    CLASS_3 = 0x03  # Error Recovery and Multiplexing Class
+
+class COTPParams:
+    def __init__(self, code: COTPParamCode, length: int, value: int) -> None:
+        self.code = code.value
         self.length = length
         self.value = value
 
 class COTProtocol(BaseProtocol):
-    def __init__(self, tcp_flags: list[int], trkt_version: int, trkt_length: int, cotp_pdu_type: int,
-                 cotp_dst_reference: int, cotp_src_reference: int, cotp_class: int, cotp_parameters: list[Params]):
-        self.tcp_flags = tcp_flags
-        self.trkt_version = trkt_version
-        self.trkt_length = trkt_length
-        self.cotp_pdu_type = cotp_pdu_type
-        self.cotp_dst_reference = cotp_dst_reference
-        self.cotp_src_reference = cotp_src_reference
-        self.cotp_class = cotp_class
-        self.cotp_parameters = cotp_parameters
+    def __init__(self, pdu_type: COTPType, dst_reference: int, src_reference: int, cotp_class: COTPClass, parameters: list[COTPParams]):
+        self.pdu_type = pdu_type.value
+        self.dst_reference = dst_reference
+        self.src_reference = src_reference
+        self.cotp_class = cotp_class.value
+        self.parameters = parameters
 
     def to_byte(self):
-        byte_array = bytearray()
-        tcp_flags_byte = 0
-        for flag in self.tcp_flags:
-            tcp_flags_byte |= flag
+        bites = bytearray()
+        bites.append(self.pdu_type)
+        bites.extend(self.dst_reference.to_bytes(2, 'big'))
+        bites.extend(self.src_reference.to_bytes(2, 'big'))
+        bites.append(self.cotp_class)
+        for param in self.parameters:
+            bites.append(param.code)
+            bites.append(param.length)
+            bites.extend(param.value.to_bytes(param.length, 'big'))     
+        return bites
 
-        byte_array.append(tcp_flags_byte)
-        byte_array.append(self.trkt_version)
-        byte_array.extend(self.trkt_length.to_bytes(2, 'big'))
-        byte_array.append(self.cotp_pdu_type)
-        byte_array.extend(self.cotp_dst_reference.to_bytes(2, 'big'))
-        byte_array.extend(self.cotp_src_reference.to_bytes(2, 'big'))
-        byte_array.append(self.cotp_class)
-        for param in self.cotp_parameters:
-            byte_array.append(param.code)
-            byte_array.append(param.length)
-            byte_array.append(param.value)
-        return bytes(byte_array)
-
-    def to_bit(self) -> str:
+    def to_bit(self):
         byte_representation = self.to_byte()
-        # Преобразуем байты в битовое представление
-        bit_string = ''.join(f'{byte:08b}' for byte in byte_representation)
-        return bit_string
+        return ''.join(f'{byte:08b}' for byte in byte_representation)

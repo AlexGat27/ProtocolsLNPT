@@ -1,29 +1,15 @@
-from Protocols import Params, COTProtocol
+from Protocols import COTProtocol, COTPClass, COTPParamCode, COTPParams, COTPType
 
 def example_COTP():
-    # Создание списка параметров COTP
-    cotp_parameters = [
-        Params(code=1, length=1, value=10),
-        Params(code=2, length=2, value=11),
-        Params(code=3, length=2, value=12)
+    parameters = [
+        COTPParams(COTPParamCode.TPDU_SIZE, 1, 9),  # tpdu-size with length 1 byte and value 9 (512 bytes)
+        COTPParams(COTPParamCode.SRC_TSAP, 2, 0x2000),  # src-tsap with length 2 bytes and value 0x2000
+        COTPParams(COTPParamCode.DST_TSAP, 2, 0x2100)   # dst-tsap with length 2 bytes and value 0x2100
     ]
 
-    # Создание объекта протокола
-    cot_protocol = COTProtocol(
-        tcp_flags=[0x0018],  # Пример значения флагов TCP
-        trkt_version=1,
-        trkt_length=253,
-        cotp_pdu_type=0x0f,
-        cotp_dst_reference=123,
-        cotp_src_reference=124,
-        cotp_class=16,
-        cotp_parameters=cotp_parameters
-    )
+    cotp = COTProtocol(COTPType.CR, 1, 2, COTPClass.CLASS_0, parameters)
+    cotp_bytes = cotp.to_byte()
+    cotp_bits = cotp.to_bit()
 
-    # Получение байтового представления
-    byte_representation = cot_protocol.to_byte()
-    print("Byte representation:", byte_representation)
-
-    # Получение битового представления
-    bit_representation = cot_protocol.to_bit()
-    print("Bit representation:", bit_representation)
+    print("COTP bytes:", cotp_bytes)
+    print("COTP bits:", cotp_bits)
