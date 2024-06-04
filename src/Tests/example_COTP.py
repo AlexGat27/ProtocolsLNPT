@@ -11,5 +11,5 @@ def example_COTP():
     cotp_bytes = cotp.to_byte()
     cotp_bits = cotp.to_bit()
 
-    print("COTP bytes:", cotp_bytes)
+    print("\nCOTP bytes:", cotp_bytes)
     print("COTP bits:", cotp_bits)
